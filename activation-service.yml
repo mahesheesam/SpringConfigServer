@@ -4,4 +4,4 @@ spring:
       name: test
       password: tester
       
-errormessage: Hello Sorry something went wrong on our end please try again or contact our adminsitative team
+errormessage: Sorry something went wrong on our end please try again or contact our adminsitative team
