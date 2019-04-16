@@ -3,6 +3,6 @@ spring:
   security:
     user:
       name: test
-      password:tester
+      password: tester
       
 lucky-word: Irish
