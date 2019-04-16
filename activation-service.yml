@@ -1,7 +1,7 @@
 spring:
   security:
     user:
-      name: test
+      name: abc
       password: tester
       
 errormessage: Sorry something went wrong on our end please try again or contact our adminsitative team welcome3333
