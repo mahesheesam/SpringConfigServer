@@ -1,2 +1,4 @@
 ---
+spring.security.user.name=testuser
+spring.security.user.password=tester
 lucky-word: Irish
