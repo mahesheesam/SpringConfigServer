@@ -1,4 +1,8 @@
 ---
-spring.security.user.name=testuser
-spring.security.user.password=tester
+spring:
+  security:
+    user:
+      name: test
+      password:tester
+      
 lucky-word: Irish
