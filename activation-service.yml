@@ -1,9 +1,2 @@
-spring:
-  security:
-    user:
-      name: testadmin
-      password: testadmin
-      
-errormessage: Sorry something went wrong on our end please try again or contact our adminsitative team
 storeid: Irving5671_001
 instanceid: WXT5631OP_001
