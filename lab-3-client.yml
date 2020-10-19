@@ -1,8 +1,0 @@
----
-spring:
-  security:
-    user:
-      name: test
-      password: tester
-      
-lucky-word: Irish
