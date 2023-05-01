@@ -20,3 +20,35 @@
         + "{$match: {b: {$ne: []}}},"
         + "{$replaceRoot: {newRoot: '$a'}}"
     })
+
+@Repository
+public interface ClientPreferenceRepository extends MongoRepository<ClientPreference, String> {
+
+    @Aggregation(pipeline = {
+        "{$lookup: {"
+            + "from: 'payment_preference_version',"
+            + "let: {"
+                + "connectivityType: '$connectivity_type',"
+                + "clientIdForConn: '$clientid_for_conn',"
+                + "uniquePrefKey: '$unique_pref_key',"
+                + "corphubId: '$corphub_id'"
+            + "},"
+            + "pipeline: ["
+                + "{$match: {"
+                    + "$expr: {"
+                        + "$and: ["
+                            + "{$eq: ['$connectivity_type', '$$connectivityType']},"
+                            + "{$eq: ['$clientid_for_conn', '$$clientIdForConn']},"
+                            + "{$eq: ['$unique_pref_key', '$$uniquePrefKey']},"
+                            + "{$eq: ['$corphub_id', '$$corphubId']}"
+                        + "]"
+                    + "}"
+                + "}}"
+            + "],"
+            + "as: 'matchedPreferences'"
+        + "}},"
+        + "{$unwind: '$matchedPreferences'},"
+        + "{$replaceRoot: {newRoot: '$a'}}"
+    })
+    List<ClientPreference> findMatchingPreferences();
+}
