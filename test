@@ -52,3 +52,34 @@ public interface ClientPreferenceRepository extends MongoRepository<ClientPrefer
     })
     List<ClientPreference> findMatchingPreferences();
 }
+
+
+@Repository
+public interface ClientPreferenceRepository extends MongoRepository<ClientPreference, String> {
+
+    @Aggregation(pipeline = {
+            "{$lookup: {
+                from: 'payment_preference_version',
+                let: {corphubId: '$corphub_id', clientId: '$clientid_for_conn', uniquePrefKey: '$unique_pref_key' , conType: '$connectivity_type'},
+                pipeline: [
+                    {$match: {
+                        $expr: {
+                            $and: [
+                                {$eq: ['$corphub_id', '$$corphubId']},
+                                {$eq: ['$clientid_for_conn', '$$clientId']},
+				{$eq: ['$unique_pref_key', '$$uniquePrefKey']},
+                                {$eq: ['$connectivity_type', '$$conType']}
+                            ]
+                        }
+                    }}
+                ],
+                as: 'payment_preference'
+            }}",
+            "{$match: {'corphub_id': ?0, 'payment_preference.connectivity_type': {'$exists': true}, "payment_preference.corphub_id": {"$exists": true},
+    "payment_preference.clientid_for_conn": {"$exists": true},
+    "payment_preference.unique_pref_key": {"$exists": true}}}"
+    })
+    List<ClientPreference> findClientPreferenceWithPaymentPreference(String corphubId);
+    
+}
+
