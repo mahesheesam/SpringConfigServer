@@ -1,35 +1,21 @@
-import csv
+import pandas as pd
 
-def compare_csv(file1, file2, output_file):
-    differences = []
+def compare_excel_files(file1, file2):
+    try:
+        # Read Excel files
+        df1 = pd.read_excel(file1)
+        df2 = pd.read_excel(file2)
 
-    with open(file1, 'r') as csv_file1, open(file2, 'r') as csv_file2:
-        reader1 = csv.reader(csv_file1)
-        reader2 = csv.reader(csv_file2)
+        # Compare the two DataFrames
+        diff = pd.concat([df1, df2]).drop_duplicates(keep=False)
 
-        headers1 = next(reader1)
-        headers2 = next(reader2)
-
-        if headers1 != headers2:
-            return "CSV files have different structures"
-
-        for row_num, (row1, row2) in enumerate(zip(reader1, reader2), start=1):
-            for col_num, (value1, value2) in enumerate(zip(row1, row2), start=1):
-                if value1 != value2:
-                    differences.append([row_num, col_num, value1, value2])
-
-    if differences:
-        with open(output_file, 'w', newline='') as output_csv:
-            writer = csv.writer(output_csv)
-            writer.writerow(['Row', 'Column', 'Value in File 1', 'Value in File 2'])
-            writer.writerows(differences)
-
-    return "Comparison complete. Differences written to output file."
+        return diff
+    except Exception as e:
+        return f"Error comparing Excel files: {str(e)}"
 
 # Usage example
-file1 = 'file1.csv'
-file2 = 'file2.csv'
-output_file = 'differences.csv'
+excel_file1 = 'file1.xlsx'
+excel_file2 = 'file2.xlsx'
 
-result = compare_csv(file1, file2, output_file)
-print(result)
+differences = compare_excel_files(excel_file1, excel_file2)
+print(differences)
