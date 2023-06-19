@@ -1,33 +1,58 @@
 import pandas as pd
+from openpyxl.styles import Font, PatternFill
 
-def compare_excel_files(file1, file2, output_file):
+def compare_and_highlight(file1, file2, output_file):
     try:
         # Read Excel files
         df1 = pd.read_excel(file1)
         df2 = pd.read_excel(file2)
 
         # Compare the two DataFrames
-        diff = pd.concat([df1, df2]).drop_duplicates(keep=False)
+        diff = df1.compare(df2)
 
-        # Identify the specific rows that are different
-        diff_rows = diff.drop_duplicates()
+        # Create a new DataFrame to store the highlighted differences
+        diff_highlighted = pd.DataFrame(index=diff.index, columns=diff.columns)
 
-        # Identify the specific columns that are different
-        diff_columns = diff.columns[diff.notnull().any()].tolist()
+        # Highlight the differences
+        fill = PatternFill(fill_type="solid", fgColor="yellow")
+        font = Font(bold=True)
 
-        # Write differences to a new Excel file
-        with pd.ExcelWriter(output_file) as writer:
-            diff_rows.to_excel(writer, sheet_name='Rows with Differences', index=False)
-            pd.DataFrame({'Columns with Differences': diff_columns}).to_excel(writer, sheet_name='Columns with Differences', index=False)
+        for row in diff.index:
+            for col in diff.columns:
+                value1 = diff.at[row, col][0]
+                value2 = diff.at[row, col][1]
+                if value1 != value2:
+                    diff_highlighted.at[row, col] = value2
+                    diff_highlighted.at[row, col] = diff_highlighted.at[row, col].apply(
+                        lambda x: f'=HYPERLINK("{file2}","{x}")'
+                    )
+                    diff_highlighted.at[row, col] = diff_highlighted.at[row, col].apply(
+                        lambda x: f'=HYPERLINK("{file2}","{x}")'
+                    )
 
-        return f"Differences saved to {output_file}"
+        # Write the differences to a new Excel file with highlighting
+        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+            df1.to_excel(writer, sheet_name='Sheet1', index=False)
+            workbook = writer.book
+            worksheet = writer.sheets['Sheet1']
+
+            for row in diff_highlighted.iterrows():
+                row_num = row[0] + 2
+                for col in row[1].iteritems():
+                    col_num = col[0] + 1
+                    cell = worksheet.cell(row=row_num, column=col_num)
+                    cell.fill = fill
+                    cell.font = font
+                    cell.hyperlink = col[1]
+
+        return f"Differences highlighted and saved to {output_file}"
     except Exception as e:
-        return f"Error comparing Excel files: {str(e)}"
+        return f"Error comparing and highlighting Excel files: {str(e)}"
 
 # Usage example
 excel_file1 = 'file1.xlsx'
 excel_file2 = 'file2.xlsx'
 output_file = 'differences.xlsx'
 
-result = compare_excel_files(excel_file1, excel_file2, output_file)
+result = compare_and_highlight(excel_file1, excel_file2, output_file)
 print(result)
