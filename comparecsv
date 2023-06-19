@@ -1,6 +1,6 @@
 import pandas as pd
 
-def compare_excel_files(file1, file2):
+def compare_excel_files(file1, file2, output_file):
     try:
         # Read Excel files
         df1 = pd.read_excel(file1)
@@ -9,13 +9,25 @@ def compare_excel_files(file1, file2):
         # Compare the two DataFrames
         diff = pd.concat([df1, df2]).drop_duplicates(keep=False)
 
-        return diff
+        # Identify the specific rows that are different
+        diff_rows = diff.drop_duplicates()
+
+        # Identify the specific columns that are different
+        diff_columns = diff.columns[diff.notnull().any()].tolist()
+
+        # Write differences to a new Excel file
+        with pd.ExcelWriter(output_file) as writer:
+            diff_rows.to_excel(writer, sheet_name='Rows with Differences', index=False)
+            pd.DataFrame({'Columns with Differences': diff_columns}).to_excel(writer, sheet_name='Columns with Differences', index=False)
+
+        return f"Differences saved to {output_file}"
     except Exception as e:
         return f"Error comparing Excel files: {str(e)}"
 
 # Usage example
 excel_file1 = 'file1.xlsx'
 excel_file2 = 'file2.xlsx'
+output_file = 'differences.xlsx'
 
-differences = compare_excel_files(excel_file1, excel_file2)
-print(differences)
+result = compare_excel_files(excel_file1, excel_file2, output_file)
+print(result)
