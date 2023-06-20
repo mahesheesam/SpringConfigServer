@@ -1,58 +1,34 @@
-import pandas as pd
-from openpyxl.styles import Font, PatternFill
+from openpyxl import Workbook, load_workbook
 
-def compare_and_highlight(file1, file2, output_file):
-    try:
-        # Read Excel files
-        df1 = pd.read_excel(file1)
-        df2 = pd.read_excel(file2)
+# Load the two source Excel sheets
+excel_file1 = "sheet1.xlsx"
+excel_file2 = "sheet2.xlsx"
 
-        # Compare the two DataFrames
-        diff = df1.compare(df2)
+wb1 = load_workbook(excel_file1)
+wb2 = load_workbook(excel_file2)
 
-        # Create a new DataFrame to store the highlighted differences
-        diff_highlighted = pd.DataFrame(index=diff.index, columns=diff.columns)
+sheet1 = wb1.active
+sheet2 = wb2.active
 
-        # Highlight the differences
-        fill = PatternFill(fill_type="solid", fgColor="yellow")
-        font = Font(bold=True)
+# Create a new workbook for the third sheet
+wb3 = Workbook()
+sheet3 = wb3.active
 
-        for row in diff.index:
-            for col in diff.columns:
-                value1 = diff.at[row, col][0]
-                value2 = diff.at[row, col][1]
-                if value1 != value2:
-                    diff_highlighted.at[row, col] = value2
-                    diff_highlighted.at[row, col] = diff_highlighted.at[row, col].apply(
-                        lambda x: f'=HYPERLINK("{file2}","{x}")'
-                    )
-                    diff_highlighted.at[row, col] = diff_highlighted.at[row, col].apply(
-                        lambda x: f'=HYPERLINK("{file2}","{x}")'
-                    )
+# Copy the headers from the first sheet to the third sheet
+headers = [cell.value for cell in sheet1[1]]
+sheet3.append(headers)
 
-        # Write the differences to a new Excel file with highlighting
-        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-            df1.to_excel(writer, sheet_name='Sheet1', index=False)
-            workbook = writer.book
-            worksheet = writer.sheets['Sheet1']
+# Write rows alternately from both sheets to the third sheet
+max_rows = max(sheet1.max_row, sheet2.max_row)
+for row_num in range(2, max_rows + 1):
+    if row_num <= sheet1.max_row:
+        row_data1 = [cell.value for cell in sheet1[row_num]]
+        sheet3.append(row_data1)
+    
+    if row_num <= sheet2.max_row:
+        row_data2 = [cell.value for cell in sheet2[row_num]]
+        sheet3.append(row_data2)
 
-            for row in diff_highlighted.iterrows():
-                row_num = row[0] + 2
-                for col in row[1].iteritems():
-                    col_num = col[0] + 1
-                    cell = worksheet.cell(row=row_num, column=col_num)
-                    cell.fill = fill
-                    cell.font = font
-                    cell.hyperlink = col[1]
-
-        return f"Differences highlighted and saved to {output_file}"
-    except Exception as e:
-        return f"Error comparing and highlighting Excel files: {str(e)}"
-
-# Usage example
-excel_file1 = 'file1.xlsx'
-excel_file2 = 'file2.xlsx'
-output_file = 'differences.xlsx'
-
-result = compare_and_highlight(excel_file1, excel_file2, output_file)
-print(result)
+# Save the third sheet to a new Excel file
+output_excel_file = "merged_sheet.xlsx"
+wb3.save(output_excel_file)
