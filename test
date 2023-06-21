@@ -1,24 +1,28 @@
+import pandas as pd
 import json
-from jsondiff import diff
 
-def compare_json(file1, file2, identifier):
-    with open(file1, 'r') as f1, open(file2, 'r') as f2:
-        json1 = json.load(f1)
-        json2 = json.load(f2)
-        
-        differences = diff(json1, json2, identifier=identifier)
-        
-        if differences:
-            print("Differences found:")
-            print(json.dumps(differences, indent=4))
-        else:
-            print("No differences found.")
+# Define the paths to the Excel files
+excel_file1 = "path/to/excel_file1.xlsx"
+excel_file2 = "path/to/excel_file2.xlsx"
 
-# Provide the file paths for the JSON files you want to compare
-file_path1 = 'path/to/file1.json'
-file_path2 = 'path/to/file2.json'
+# Define the output paths for the JSON files
+json_file1 = "path/to/output_file1.json"
+json_file2 = "path/to/output_file2.json"
 
-# Specify the fields to be used as the identifier
-identifier = ['id', 'name']
+# Read data from Excel files
+data1 = pd.read_excel(excel_file1)
+data2 = pd.read_excel(excel_file2)
 
-compare_json(file_path1, file_path2, identifier)
+# Convert data to JSON
+json_data1 = data1.to_json(orient="records")
+json_data2 = data2.to_json(orient="records")
+
+# Write JSON data to files
+with open(json_file1, "w") as file1:
+    file1.write(json_data1)
+
+with open(json_file2, "w") as file2:
+    file2.write(json_data2)
+
+# Print success message
+print("Data conversion completed. JSON files created.")
