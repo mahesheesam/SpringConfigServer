@@ -1,28 +1,37 @@
-import pandas as pd
 import json
+import hashlib
+import jsondiff
 
-# Define the paths to the Excel files
-excel_file1 = "path/to/excel_file1.xlsx"
-excel_file2 = "path/to/excel_file2.xlsx"
+# Define the paths to the JSON files
+json_file1 = "path/to/json_file1.json"
+json_file2 = "path/to/json_file2.json"
 
-# Define the output paths for the JSON files
-json_file1 = "path/to/output_file1.json"
-json_file2 = "path/to/output_file2.json"
+# Define the identifier fields
+identifier_fields = ["email"]
 
-# Read data from Excel files
-data1 = pd.read_excel(excel_file1)
-data2 = pd.read_excel(excel_file2)
+# Read JSON data from files
+with open(json_file1, "r") as file1:
+    json_data1 = json.load(file1)
 
-# Convert data to JSON
-json_data1 = data1.to_json(orient="records")
-json_data2 = data2.to_json(orient="records")
+with open(json_file2, "r") as file2:
+    json_data2 = json.load(file2)
 
-# Write JSON data to files
-with open(json_file1, "w") as file1:
-    file1.write(json_data1)
+# Function to generate a unique identifier for an object based on the identifier fields
+def generate_identifier(obj):
+    identifier_string = ""
+    for field in identifier_fields:
+        identifier_string += str(obj.get(field, ""))
+    return hashlib.md5(identifier_string.encode()).hexdigest()
 
-with open(json_file2, "w") as file2:
-    file2.write(json_data2)
+# Add a unique identifier field to each object in JSON data
+for obj in json_data1:
+    obj["_id"] = generate_identifier(obj)
 
-# Print success message
-print("Data conversion completed. JSON files created.")
+for obj in json_data2:
+    obj["_id"] = generate_identifier(obj)
+
+# Find the differences between the JSON objects
+diff = jsondiff.diff(json_data1, json_data2)
+
+# Print the differences
+print(diff)
