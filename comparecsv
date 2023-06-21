@@ -1,36 +1,30 @@
-import openpyxl
+import json
 
-# Load the first Excel sheet
-wb1 = openpyxl.load_workbook('sheet1.xlsx')
-sheet1 = wb1.active
+def convert_flattened_to_structured(json_data):
+    structured_json = {}
+    for key, value in json_data.items():
+        keys = key.split('.')  # Split the flattened key by '.'
+        current_dict = structured_json
 
-# Load the second Excel sheet
-wb2 = openpyxl.load_workbook('sheet2.xlsx')
-sheet2 = wb2.active
+        # Traverse the keys and create nested dictionaries
+        for i, k in enumerate(keys):
+            if k not in current_dict:
+                if i == len(keys) - 1:
+                    current_dict[k] = value
+                else:
+                    current_dict[k] = {}
+            current_dict = current_dict[k]
 
-# Create a new workbook for the third sheet
-wb3 = openpyxl.Workbook()
-sheet3 = wb3.active
+    return structured_json
 
-# Copy the headers from the first sheet to the third sheet
-for column in range(1, sheet1.max_column + 1):
-    cell = sheet1.cell(row=1, column=column)
-    sheet3.cell(row=1, column=column).value = cell.value
+# Example flattened JSON data
+flattened_json = {
+    'person.name.first': 'John',
+    'person.name.last': 'Doe',
+    'person.age': 30,
+    'address.city': 'New York',
+    'address.state': 'NY'
+}
 
-# Copy the data from both sheets to the third sheet
-for row in range(2, sheet1.max_row + 1):
-    # Copy data from sheet1
-    for column in range(1, sheet1.max_column + 1):
-        cell = sheet1.cell(row=row, column=column)
-        sheet3.cell(row=row, column=column).value = cell.value
-
-    # Copy data from sheet2 and highlight the cells in sheet3
-    for column in range(1, sheet2.max_column + 1):
-        cell = sheet2.cell(row=row, column=column)
-        sheet3.cell(row=row, column=column).value = cell.value
-        sheet3.cell(row=row, column=column).fill = openpyxl.styles.PatternFill(
-            fgColor='FFFF00'
-        )
-
-# Save the third sheet to a new Excel file
-wb3.save('merged_sheet.xlsx')
+structured_json = convert_flattened_to_structured(flattened_json)
+print(json.dumps(structured_json, indent=4))
