@@ -1,5 +1,32 @@
-Our Design Approach:
-We are making changes to simplify our codebase by removing static enums that the UI currently uses in its screens. Instead, we'll send these bbb to the backend for storage. During this transition, the backend service will validate the values received from the UI against the static enums.
-To support these changes, we are introducing a new endpoint specifically for the  ABC  UI. This endpoint will provide all the p and r types required by the UI for setting up pf.
-Additionally, we're in the process of developing CREATE, UPDATE, and DELETE endpoints. These endpoints will be managed exclusively by our engineering team or via control panel requests. They enable dynamic additions, updates, or deletions of p and r types.
-This approach ensures that our system remains scalable and can accommodate different p and r types without requiring code changes. It simplifies the UI and enhances flexibility without compromising the integrity of the system.
+db.collection1.aggregate([
+  {
+    $lookup: {
+      from: "collection2",
+      let: { clientid: "$clientid", conn: "$conn", connectivitytype: "$connectivitytype" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$$clientid", "$clientid"] },
+                { $eq: ["$$conn", "$conn"] },
+                { $eq: ["$$connectivitytype", "$connectivitytype"] }
+              ]
+            }
+          }
+        }
+      ],
+      as: "joinedRecords"
+    }
+  },
+  {
+    $project: {
+      _id: 1,
+      clientid: 1,
+      conn: 1,
+      connectivitytype: 1,
+      joinedRecords: 1,
+      totalCount: { $size: "$joinedRecords" }
+    }
+  }
+])
