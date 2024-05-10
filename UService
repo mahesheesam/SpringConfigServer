@@ -26,6 +26,8 @@ public class UserService {
             List<User> batch = users.subList(i, end);
 
             processBatch(bulkOperations, batch);
+logger.info("Processed batch {}/{}: {} records", (i / batchSize) + 1, (int) Math.ceil((double) totalRecords / batchSize), batch.size());
+
         }
 
         bulkOperations.execute();
