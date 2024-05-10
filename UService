@@ -1,0 +1,41 @@
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    public void bulkUpdateUserNames(List<User> users) {
+        int batchSize = 1000; // Set your desired batch size
+        int totalRecords = users.size();
+
+        BulkOperations bulkOperations = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, User.class);
+
+        for (int i = 0; i < totalRecords; i += batchSize) {
+            int end = Math.min(i + batchSize, totalRecords);
+
+            List<User> batch = users.subList(i, end);
+
+            processBatch(bulkOperations, batch);
+        }
+
+        bulkOperations.execute();
+    }
+
+    private void processBatch(BulkOperations bulkOperations, List<User> batch) {
+        for (User user : batch) {
+            Query query = new Query(Criteria.where("id").is(user.getId()));
+            Update update = new Update().set("name", user.getName());
+            bulkOperations.updateOne(query, update);
+        }
+    }
+}
