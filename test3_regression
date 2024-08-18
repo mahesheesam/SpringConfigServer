@@ -1,0 +1,113 @@
+Here’s how you can structure this plan for Confluence:
+
+---
+
+**Title: Regression Testing Plan for Preferences Service Spring Boot Application**
+
+---
+
+### **1. Project Overview**
+This project involves creating automated regression tests using Java Selenium for a Spring Boot application that manages various preferences, including channel preferences, payment preferences, webhook preferences, and reporting preferences.
+
+### **2. Objective**
+To ensure that the application's endpoints are thoroughly tested for regression issues whenever new changes are introduced, maintaining the stability and reliability of the Preferences Service.
+
+### **3. Phases and Tasks**
+
+#### **Phase 1: Project Setup**
+- **Task 1.1: Set Up the Project Environment**
+  - Set up a new Maven project for Selenium in Java.
+  - Integrate TestNG or JUnit for test execution.
+  - Configure the WebDriver for the preferred browser.
+  - **Task Owner: [Team Member 1]**
+  
+- **Task 1.2: Set Up CI/CD Pipeline**
+  - Integrate the regression tests with the existing CI/CD pipeline.
+  - Configure the pipeline to run tests on code commits, pull requests, and nightly builds.
+  - **Task Owner: [Team Member 2]**
+
+#### **Phase 2: Test Case Design**
+- **Task 2.1: Identify and Document Test Cases**
+  - Analyze the existing endpoints and document test cases for:
+    - Inserting tasks with preferences for each channel.
+    - Fetching preferences.
+    - Payment preferences.
+    - Webhook preferences.
+    - Reporting preferences.
+  - **Task Owner: [Team Member 3]**
+
+#### **Phase 3: Test Implementation**
+- **Task 3.1: Implement Test Cases for Insert Task with Preferences**
+  - Implement Selenium tests for inserting tasks with various channel preferences.
+  - Ensure tests cover different scenarios, including valid and invalid data.
+  - **Task Owner: [Team Member 4]**
+
+- **Task 3.2: Implement Test Cases for Fetch Preferences**
+  - Implement Selenium tests to verify that preferences can be fetched correctly.
+  - Include scenarios where preferences exist and where they don't.
+  - **Task Owner: [Team Member 5]**
+
+- **Task 3.3: Implement Test Cases for Payment Preferences**
+  - Implement tests for validating payment preferences functionality.
+  - Cover edge cases, including different payment methods and invalid configurations.
+  - **Task Owner: [Team Member 6]**
+
+- **Task 3.4: Implement Test Cases for Webhook Preferences**
+  - Create tests for webhook preferences, ensuring they are triggered correctly and data is accurate.
+  - **Task Owner: [Team Member 7]**
+
+- **Task 3.5: Implement Test Cases for Reporting Preferences**
+  - Develop tests to verify that reporting preferences are applied correctly.
+  - **Task Owner: [Team Member 8]**
+
+#### **Phase 4: Test Execution and Reporting**
+- **Task 4.1: Run Tests and Validate Results**
+  - Execute the implemented test cases and validate the results.
+  - Ensure that all tests pass successfully.
+  - **Task Owner: [Team Member 9]**
+
+- **Task 4.2: Generate and Share Test Reports**
+  - Generate detailed test reports after each test run.
+  - Share the reports with stakeholders and the development team.
+  - **Task Owner: [Team Member 10]**
+
+#### **Phase 5: Maintenance and Optimization**
+- **Task 5.1: Update Tests Based on Feedback**
+  - Update and optimize test cases based on feedback from the development and QA teams.
+  - **Task Owner: [Team Member 11]**
+
+- **Task 5.2: Monitor and Address CI/CD Failures**
+  - Continuously monitor the CI/CD pipeline for test failures.
+  - Investigate and address any issues that arise.
+  - **Task Owner: [Team Member 12]**
+
+### **4. Team Roles and Responsibilities**
+- **Project Manager**: Oversee the project, ensure timely delivery, and coordinate between team members.
+- **Lead Developer**: Provide technical guidance, especially in the integration of Selenium with the application.
+- **QA Lead**: Ensure that all test cases are comprehensive and cover all critical functionality.
+- **Developers/QA Engineers**: Implement, execute, and maintain the test cases.
+
+### **5. Timeline**
+- **Week 1**: Project setup and CI/CD integration.
+- **Week 2-3**: Test case design and documentation.
+- **Week 4-5**: Test implementation for all endpoints.
+- **Week 6**: Test execution, reporting, and feedback loop.
+- **Ongoing**: Maintenance, monitoring, and optimization.
+
+### **6. Next Steps**
+- Review the plan with the team.
+- Assign tasks based on expertise and availability.
+- Set up regular check-ins to track progress and address any blockers.
+
+---
+
+**Instructions for Adding to Confluence:**
+
+1. **Create a New Page**: Go to your Confluence space and create a new page.
+2. **Title**: Use "Regression Testing Plan for Preferences Service Spring Boot Application" as the title.
+3. **Copy-Paste the Plan**: Copy the structured plan from above and paste it into the Confluence editor.
+4. **Format as Needed**: Use headings (H1, H2, etc.) for different sections, and add bullet points or numbered lists for tasks. You can also use Confluence macros for tables, task lists, and other features to enhance the document.
+5. **Assign Tasks**: Use Confluence task lists to assign tasks to team members, if desired.
+6. **Publish**: Once everything is set, publish the page and share the link with your team.
+
+This will help keep everything organized and accessible for your team.
