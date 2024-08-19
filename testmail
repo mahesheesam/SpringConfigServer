@@ -1,29 +1,80 @@
-        List<String> finalList = objects.stream()
-            .flatMap(obj -> obj.getStrings().stream())
-            .distinct()
-            .collect(Collectors.toList());
-
-
-boolean hasMoreEnabled = featureFlagsConfig.getIsAccountsHasMoreEnabled();
-
-if (CollectionUtils.isNotEmpty(accounts.getAccountNumbersList())) {
-    processAccounts(accounts.getAccountNumbersList(), hasMoreEnabled, paymentAuthorizationAccounts::setAccountNumbersList, paymentAuthorizationAccounts::setHasMore);
-}
-
-if (CollectionUtils.isNotEmpty(accounts.getExternalAccounts())) {
-    processAccounts(accounts.getExternalAccounts(), hasMoreEnabled, paymentAuthorizationAccounts::setExternalAccounts, paymentAuthorizationAccounts::setHasMoreExternalAccounts);
-}
-
-private <T> void processAccounts(
-    List<T> accounts,
-    boolean hasMoreEnabled,
-    Consumer<List<T>> setAccounts,
-    Consumer<Boolean> setHasMore
-) {
-    List<T> accountsToSet = accounts.stream().limit(DEFAULT_ACCOUNTS_LIMIT).collect(Collectors.toList());
-    setAccounts.accept(accountsToSet);
-
-    if (hasMoreEnabled && accounts.size() > DEFAULT_ACCOUNTS_LIMIT) {
-        setHasMore.accept(true);
+public void checkAndInsertPaymentPreference(ClientPreference clientPreference, String taskId) {
+    if (isClientPreferenceInvalid(clientPreference)) {
+        return;
     }
+
+    PreferenceIdGeneratorMongoEntry prefGenerator = dbUtility
+            .generatePreferenceIdMongo(clientPreference.getPreference().getClientIdForConn(), taskId);
+    log.info("Inserting Task Payment Preference in Mongo for ClientIdForConn {}, CorpHub ID {}, Version {}",
+            clientPreference.getPreference().getClientIdForConn(),
+            clientPreference.getPreference().getCorpHubId(),
+            prefGenerator.getId());
+
+    if (isAccountNotNull(clientPreference)) {
+        handleAccountEntryInsertion(clientPreference, prefGenerator);
+    }
+
+    if (isPaymentAccountAuthorizationEnabled(clientPreference)) {
+        handlePaymentAccountAuthorization(clientPreference, prefGenerator);
+    }
+
+    dbUtility.insertPaymentPreferenceMongo(clientPreference, prefGenerator.getId());
+    updatePaymentVersion(clientPreference, prefGenerator);
+}
+
+private boolean isClientPreferenceInvalid(ClientPreference clientPreference) {
+    return clientPreference == null || clientPreference.getPreference() == null;
+}
+
+private boolean isAccountNotNull(ClientPreference clientPreference) {
+    return clientPreference.getPreference().getPaymentAccountAuthorization().getAccounts() != null;
+}
+
+private void handleAccountEntryInsertion(ClientPreference clientPreference, PreferenceIdGeneratorMongoEntry prefGenerator) {
+    Preference.Accounts accounts = clientPreference.getPreference().getPaymentAccountAuthorization().getAccounts();
+    dbUtility.insertAccountEntryListMongo(
+            createClientAccountEntries(accounts.getAccountNumbersList(), accounts.getExternalAccounts(), 
+            clientPreference.getPreference().getCorpHubId(), prefGenerator.getId())
+    );
+    resetAccounts(clientPreference);
+}
+
+private void resetAccounts(ClientPreference clientPreference) {
+    clientPreference.getPreference().getPaymentAccountAuthorization().setAccountNumbersList(new ArrayList<>());
+    clientPreference.getPreference().getPaymentAccountAuthorization().setExternalAccounts(new ArrayList<>());
+}
+
+private boolean isPaymentAccountAuthorizationEnabled(ClientPreference clientPreference) {
+    return featureFlagsConfig.isPaymentAccountAuthorizationEnabled()
+            && clientPreference.getPreference().getPaymentAccountAuthorization() != null
+            && clientPreference.getPreference().getPaymentAccountAuthorization().getClientRelationships() != null;
+}
+
+private void handlePaymentAccountAuthorization(ClientPreference clientPreference, PreferenceIdGeneratorMongoEntry prefGenerator) {
+    clientPreference.getPreference().getPaymentAccountAuthorization().getClientRelationships().forEach(r -> {
+        dbUtility.insertAccountEntryListMongo(
+                createClientAccountEntries(r.getExternalAccountEntries(), r.getExternalAccountEntries(),
+                r.getRelatedEntityId(), prefGenerator.getId())
+        );
+    });
+    clientPreference.getPreference().getPaymentAccountAuthorization().setClientRelationships(null);
+}
+
+private void updatePaymentVersion(ClientPreference clientPreference, PreferenceIdGeneratorMongoEntry prefGenerator) {
+    if (dbUtility.checkIfUniquePaymentVersionExistsMongo(clientPreference.getPreference().getClientIdForConn(),
+            clientPreference.getPreference().getCorpHubId(), clientPreference.getPreference().getConnectivityType())) {
+        dbUtility.savePaymentPreferenceVersionMongo(clientPreference.getPreference().getClientIdForConn(),
+                clientPreference.getPreference().getCorpHubId(), prefGenerator.getId(),
+                clientPreference.getPreference().getConnectivityType());
+    } else {
+        dbUtility.updatePaymentPreferenceVersionMongo(clientPreference.getPreference().getClientIdForConn(),
+                clientPreference.getPreference().getCorpHubId(), prefGenerator.getId(),
+                clientPreference.getPreference().getConnectivityType());
+    }
+}
+
+private List<AccountEntry> createClientAccountEntries(List<AccountNumber> accountNumbersList,
+        List<ExternalAccount> externalAccounts, String corpHubId, String prefGeneratorId) {
+    // Implementation of creating account entries can go here.
+    // Assuming you have a method to create and return the list of AccountEntry
 }
