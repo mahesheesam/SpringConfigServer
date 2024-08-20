@@ -1,80 +1,100 @@
-public void checkAndInsertPaymentPreference(ClientPreference clientPreference, String taskId) {
-    if (isClientPreferenceInvalid(clientPreference)) {
-        return;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.util.CollectionUtils;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class YourServiceTest {
+
+    @Mock
+    private ClientAccountsMongoRepo clientAccountsMongoRepo;
+
+    @Mock
+    private DbUtility dbUtility;
+
+    @Mock
+    private BridgeClient bridgeClient;
+
+    @InjectMocks
+    private YourService yourService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
-    PreferenceIdGeneratorMongoEntry prefGenerator = dbUtility
-            .generatePreferenceIdMongo(clientPreference.getPreference().getClientIdForConn(), taskId);
-    log.info("Inserting Task Payment Preference in Mongo for ClientIdForConn {}, CorpHub ID {}, Version {}",
-            clientPreference.getPreference().getClientIdForConn(),
-            clientPreference.getPreference().getCorpHubId(),
-            prefGenerator.getId());
+    @Test
+    void testInsertClientAccounts_emptyInputList() {
+        List<AccountsInsert> accountsInsertList = Collections.emptyList();
+        yourService.insertClientAccounts(accountsInsertList);
 
-    if (isAccountNotNull(clientPreference)) {
-        handleAccountEntryInsertion(clientPreference, prefGenerator);
+        verify(clientAccountsMongoRepo, never()).saveAll(anyList());
+        verify(dbUtility, never()).fetchAccountsByAccountNumbers(anyString(), anyString(), anyList());
     }
 
-    if (isPaymentAccountAuthorizationEnabled(clientPreference)) {
-        handlePaymentAccountAuthorization(clientPreference, prefGenerator);
+    @Test
+    void testInsertClientAccounts_existingAccountNumbers() {
+        AccountsInsert accountsInsert = new AccountsInsert();
+        accountsInsert.setCorpHubId("123");
+        accountsInsert.setUniquePrefKey("abc");
+        accountsInsert.setAccountNumberList(Arrays.asList("acc1", "acc2"));
+
+        when(dbUtility.fetchAccountsByAccountNumbers(eq("123"), eq("abc"), anyList()))
+            .thenReturn(Arrays.asList("acc1")); // simulate acc1 exists in DB
+
+        yourService.insertClientAccounts(Arrays.asList(accountsInsert));
+
+        // Verify that only acc2 is inserted
+        verify(clientAccountsMongoRepo, times(1)).saveAll(anyList());
     }
 
-    dbUtility.insertPaymentPreferenceMongo(clientPreference, prefGenerator.getId());
-    updatePaymentVersion(clientPreference, prefGenerator);
-}
+    @Test
+    void testInsertClientAccounts_noExistingAccounts() {
+        AccountsInsert accountsInsert = new AccountsInsert();
+        accountsInsert.setCorpHubId("123");
+        accountsInsert.setUniquePrefKey("abc");
+        accountsInsert.setAccountNumberList(Arrays.asList("acc1", "acc2"));
 
-private boolean isClientPreferenceInvalid(ClientPreference clientPreference) {
-    return clientPreference == null || clientPreference.getPreference() == null;
-}
+        when(dbUtility.fetchAccountsByAccountNumbers(eq("123"), eq("abc"), anyList()))
+            .thenReturn(Collections.emptyList()); // simulate no accounts exist in DB
 
-private boolean isAccountNotNull(ClientPreference clientPreference) {
-    return clientPreference.getPreference().getPaymentAccountAuthorization().getAccounts() != null;
-}
+        yourService.insertClientAccounts(Arrays.asList(accountsInsert));
 
-private void handleAccountEntryInsertion(ClientPreference clientPreference, PreferenceIdGeneratorMongoEntry prefGenerator) {
-    Preference.Accounts accounts = clientPreference.getPreference().getPaymentAccountAuthorization().getAccounts();
-    dbUtility.insertAccountEntryListMongo(
-            createClientAccountEntries(accounts.getAccountNumbersList(), accounts.getExternalAccounts(), 
-            clientPreference.getPreference().getCorpHubId(), prefGenerator.getId())
-    );
-    resetAccounts(clientPreference);
-}
-
-private void resetAccounts(ClientPreference clientPreference) {
-    clientPreference.getPreference().getPaymentAccountAuthorization().setAccountNumbersList(new ArrayList<>());
-    clientPreference.getPreference().getPaymentAccountAuthorization().setExternalAccounts(new ArrayList<>());
-}
-
-private boolean isPaymentAccountAuthorizationEnabled(ClientPreference clientPreference) {
-    return featureFlagsConfig.isPaymentAccountAuthorizationEnabled()
-            && clientPreference.getPreference().getPaymentAccountAuthorization() != null
-            && clientPreference.getPreference().getPaymentAccountAuthorization().getClientRelationships() != null;
-}
-
-private void handlePaymentAccountAuthorization(ClientPreference clientPreference, PreferenceIdGeneratorMongoEntry prefGenerator) {
-    clientPreference.getPreference().getPaymentAccountAuthorization().getClientRelationships().forEach(r -> {
-        dbUtility.insertAccountEntryListMongo(
-                createClientAccountEntries(r.getExternalAccountEntries(), r.getExternalAccountEntries(),
-                r.getRelatedEntityId(), prefGenerator.getId())
-        );
-    });
-    clientPreference.getPreference().getPaymentAccountAuthorization().setClientRelationships(null);
-}
-
-private void updatePaymentVersion(ClientPreference clientPreference, PreferenceIdGeneratorMongoEntry prefGenerator) {
-    if (dbUtility.checkIfUniquePaymentVersionExistsMongo(clientPreference.getPreference().getClientIdForConn(),
-            clientPreference.getPreference().getCorpHubId(), clientPreference.getPreference().getConnectivityType())) {
-        dbUtility.savePaymentPreferenceVersionMongo(clientPreference.getPreference().getClientIdForConn(),
-                clientPreference.getPreference().getCorpHubId(), prefGenerator.getId(),
-                clientPreference.getPreference().getConnectivityType());
-    } else {
-        dbUtility.updatePaymentPreferenceVersionMongo(clientPreference.getPreference().getClientIdForConn(),
-                clientPreference.getPreference().getCorpHubId(), prefGenerator.getId(),
-                clientPreference.getPreference().getConnectivityType());
+        // Verify that both acc1 and acc2 are inserted
+        verify(clientAccountsMongoRepo, times(1)).saveAll(anyList());
     }
-}
 
-private List<AccountEntry> createClientAccountEntries(List<AccountNumber> accountNumbersList,
-        List<ExternalAccount> externalAccounts, String corpHubId, String prefGeneratorId) {
-    // Implementation of creating account entries can go here.
-    // Assuming you have a method to create and return the list of AccountEntry
+    @Test
+    void testInsertClientAccounts_withBridgeClient() {
+        AccountsInsert accountsInsert = new AccountsInsert();
+        accountsInsert.setCorpHubId("123");
+        accountsInsert.setUniquePrefKey("abc");
+        accountsInsert.setAccountTypes(Arrays.asList("type1", "type2"));
+        accountsInsert.setAccountNumberList(Arrays.asList("acc1"));
+
+        ClientAccount clientAccount = new ClientAccount();
+        clientAccount.setAccountNumber("acc1");
+        clientAccount.setAccountType("type1");
+
+        when(dbUtility.fetchAccountsByAccountNumbers(eq("123"), eq("abc"), anyList()))
+            .thenReturn(Collections.emptyList()); // simulate no accounts exist in DB
+
+        when(bridgeClient.getClientAccounts(anySet()))
+            .thenReturn(Map.of("123", Arrays.asList(clientAccount))); // simulate fetching accounts from bridge client
+
+        yourService.insertClientAccounts(Arrays.asList(accountsInsert));
+
+        // Verify that the account from bridgeClient is inserted
+        verify(clientAccountsMongoRepo, times(1)).saveAll(anyList());
+    }
 }
