@@ -1,1 +1,13 @@
 
+import org.apache.commons.collections4.ListUtils;
+import java.util.List;
+
+public class ListPartitioner {
+
+    public static <T> List<List<T>> splitPartitions(List<T> list, int batchSize) {
+        if (list == null || batchSize <= 0) {
+            throw new IllegalArgumentException("List cannot be null and batchSize must be greater than 0");
+        }
+        return ListUtils.partition(list, batchSize);
+    }
+}
