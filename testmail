@@ -1,1 +1,5 @@
-
+    public static boolean hasValidAccountInfo(AccountIdentifier accountIdentifier) {
+        return accountIdentifier != null 
+               && accountIdentifier.getAccountNumber() != null 
+               && accountIdentifier.getIBan() != null;
+    }
