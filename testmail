@@ -1,1 +1,30 @@
 
+Certainly! Here’s a draft of the email in narrative English:
+
+---
+
+**Subject:** Upcoming Changes to Preference Service API
+
+Dear [Recipient's Name],
+
+I hope this email finds you well.
+
+I wanted to bring to your attention an important update regarding our Preference Service. As you know, our service stores various types of preferences, including webhook, payment, and reporting preferences. With each passing day, the volume of preferences stored in our database continues to grow. 
+
+Recently, we have observed that our APIs are not performing optimally when downstream services fetch these preferences, leading to timeouts and impacting overall performance. To address this issue, we are planning to implement paginated APIs. This change will ensure more efficient data retrieval and improve the performance of our services when handling large volumes of preferences.
+
+We wanted to give you a heads-up about this upcoming change so that you can start planning any necessary adjustments on your end. We will keep you informed about the timeline and provide further details as we get closer to implementation.
+
+Please let us know if you have any questions or need more information. We appreciate your cooperation and support as we work to enhance the performance of our Preference Service.
+
+Thank you.
+
+Best regards,
+
+[Your Name]  
+[Your Position]  
+[Your Company]
+
+---
+
+Feel free to modify the email as needed!
