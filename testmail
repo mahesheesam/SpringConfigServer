@@ -1,56 +1,37 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+@RunWith(SpringRunner.class)
+@SpringBootTest(classes = KafkaConsumerConfig.class)
+public class KafkaConsumerConfigTest {
 
-class CommonUtilTest {
+    @Autowired
+    private KafkaConsumerConfig kafkaConsumerConfig;
 
-    @Mock
-    private ObjectMapper objectMapper;
+    @MockBean
+    private ConsumerFactory<String, String> consumerFactory;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @Test
+    public void testConsumerConfigs() {
+        Map<String, Object> consumerConfigs = kafkaConsumerConfig.consumerConfigs();
+        
+        // Verify that the properties are set correctly
+        assertEquals("localhost:9092", consumerConfigs.get(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG));
+        assertEquals(StringDeserializer.class, consumerConfigs.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG));
+        assertEquals(StringDeserializer.class, consumerConfigs.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
+        assertEquals("group-id", consumerConfigs.get(ConsumerConfig.GROUP_ID_CONFIG));
+        assertEquals("earliest", consumerConfigs.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG));
     }
 
     @Test
-    void testGetObjectMapper() {
-        // Assert that the getObjectMapper method returns a non-null ObjectMapper instance
-        ObjectMapper mapper = CommonUtil.getObjectMapper();
-        assertNotNull(mapper);
+    public void testConsumerFactory() {
+        // Verify that the consumerFactory bean is created with the proper configurations
+        ConsumerFactory<String, String> consumerFactory = kafkaConsumerConfig.consumerFactory();
+        assertNotNull(consumerFactory);
     }
 
     @Test
-    void testGetString_Success() throws Exception {
-        // Mock the object to test
-        Object testObject = new Object();
-        String expectedJson = "{\"key\":\"value\"}";
-
-        // Mock the writeValueAsString behavior
-        when(CommonUtil.getObjectMapper().writeValueAsString(testObject)).thenReturn(expectedJson);
-
-        // Test the getString method
-        String result = CommonUtil.getString(testObject);
-
-        // Validate the result
-        assertEquals(expectedJson, result);
-    }
-
-    @Test
-    void testGetString_Exception() throws Exception {
-        // Mock the object to test
-        Object testObject = new Object();
-
-        // Simulate a failure in writeValueAsString
-        when(CommonUtil.getObjectMapper().writeValueAsString(testObject)).thenThrow(new RuntimeException("Error"));
-
-        // Test the getString method
-        String result = CommonUtil.getString(testObject);
-
-        // Validate that the method handles the exception and returns an empty string
-        assertEquals("", result);
+    public void testKafkaListenerContainerFactory() {
+        // Verify that the ConcurrentKafkaListenerContainerFactory bean is created properly
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = kafkaConsumerConfig.kafkaListenerContainerFactory();
+        assertNotNull(factory);
+        assertEquals(consumerFactory, factory.getConsumerFactory());
     }
 }
