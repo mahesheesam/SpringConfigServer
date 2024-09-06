@@ -1,30 +1,56 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-Certainly! Here’s a draft of the email in narrative English:
+class CommonUtilTest {
 
----
+    @Mock
+    private ObjectMapper objectMapper;
 
-**Subject:** Upcoming Changes to Preference Service API
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-Dear [Recipient's Name],
+    @Test
+    void testGetObjectMapper() {
+        // Assert that the getObjectMapper method returns a non-null ObjectMapper instance
+        ObjectMapper mapper = CommonUtil.getObjectMapper();
+        assertNotNull(mapper);
+    }
 
-I hope this email finds you well.
+    @Test
+    void testGetString_Success() throws Exception {
+        // Mock the object to test
+        Object testObject = new Object();
+        String expectedJson = "{\"key\":\"value\"}";
 
-I wanted to bring to your attention an important update regarding our Preference Service. As you know, our service stores various types of preferences, including webhook, payment, and reporting preferences. With each passing day, the volume of preferences stored in our database continues to grow. 
+        // Mock the writeValueAsString behavior
+        when(CommonUtil.getObjectMapper().writeValueAsString(testObject)).thenReturn(expectedJson);
 
-Recently, we have observed that our APIs are not performing optimally when downstream services fetch these preferences, leading to timeouts and impacting overall performance. To address this issue, we are planning to implement paginated APIs. This change will ensure more efficient data retrieval and improve the performance of our services when handling large volumes of preferences.
+        // Test the getString method
+        String result = CommonUtil.getString(testObject);
 
-We wanted to give you a heads-up about this upcoming change so that you can start planning any necessary adjustments on your end. We will keep you informed about the timeline and provide further details as we get closer to implementation.
+        // Validate the result
+        assertEquals(expectedJson, result);
+    }
 
-Please let us know if you have any questions or need more information. We appreciate your cooperation and support as we work to enhance the performance of our Preference Service.
+    @Test
+    void testGetString_Exception() throws Exception {
+        // Mock the object to test
+        Object testObject = new Object();
 
-Thank you.
+        // Simulate a failure in writeValueAsString
+        when(CommonUtil.getObjectMapper().writeValueAsString(testObject)).thenThrow(new RuntimeException("Error"));
 
-Best regards,
+        // Test the getString method
+        String result = CommonUtil.getString(testObject);
 
-[Your Name]  
-[Your Position]  
-[Your Company]
-
----
-
-Feel free to modify the email as needed!
+        // Validate that the method handles the exception and returns an empty string
+        assertEquals("", result);
+    }
+}
