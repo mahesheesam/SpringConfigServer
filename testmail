@@ -1,3 +1,9 @@
 db.collectionName.aggregate([
   { $group: { _id: "$corphubId", count: { $sum: 1 } } }
 ])
+
+db.collectionName.aggregate([
+  { $unwind: "$accounts" },  // Use if 'accounts' is an array in your document
+  { $group: { _id: "$corphubId", count: { $sum: 1 } } }
+])
+
