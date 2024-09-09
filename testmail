@@ -1,37 +1,48 @@
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = KafkaConsumerConfig.class)
-public class KafkaConsumerConfigTest {
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 
-    @Autowired
-    private KafkaConsumerConfig kafkaConsumerConfig;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-    @MockBean
-    private ConsumerFactory<String, String> consumerFactory;
+public class CSVCamelCaseChecker {
 
-    @Test
-    public void testConsumerConfigs() {
-        Map<String, Object> consumerConfigs = kafkaConsumerConfig.consumerConfigs();
-        
-        // Verify that the properties are set correctly
-        assertEquals("localhost:9092", consumerConfigs.get(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG));
-        assertEquals(StringDeserializer.class, consumerConfigs.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG));
-        assertEquals(StringDeserializer.class, consumerConfigs.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
-        assertEquals("group-id", consumerConfigs.get(ConsumerConfig.GROUP_ID_CONFIG));
-        assertEquals("earliest", consumerConfigs.get(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG));
+    // Method to check if a string is in camelCase
+    public static boolean isCamelCase(String str) {
+        if (str == null) {
+            return false;
+        }
+        // Regex to check for camelCase
+        String camelCasePattern = "([a-z]+[A-Z][a-z]*)";
+        Pattern pattern = Pattern.compile(camelCasePattern);
+        Matcher matcher = pattern.matcher(str);
+        return matcher.find();
     }
 
-    @Test
-    public void testConsumerFactory() {
-        // Verify that the consumerFactory bean is created with the proper configurations
-        ConsumerFactory<String, String> consumerFactory = kafkaConsumerConfig.consumerFactory();
-        assertNotNull(consumerFactory);
-    }
+    public static void main(String[] args) {
+        String filePath = "path/to/your/csvfile.csv";  // Replace with your CSV file path
+        String columnToCheck = "yourColumnName";       // Replace with your CSV column name
 
-    @Test
-    public void testKafkaListenerContainerFactory() {
-        // Verify that the ConcurrentKafkaListenerContainerFactory bean is created properly
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = kafkaConsumerConfig.kafkaListenerContainerFactory();
-        assertNotNull(factory);
-        assertEquals(consumerFactory, factory.getConsumerFactory());
+        try {
+            Reader in = new FileReader(filePath);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                .withFirstRecordAsHeader()   // Assumes the first row is header
+                .parse(in);
+
+            for (CSVRecord record : records) {
+                String columnValue = record.get(columnToCheck);  // Get the value of the specified column
+                
+                // Check if the value is in camelCase
+                if (isCamelCase(columnValue)) {
+                    System.out.println("CamelCase Detected: " + columnValue);
+                } else {
+                    System.out.println("No CamelCase: " + columnValue);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
