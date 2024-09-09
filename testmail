@@ -7,3 +7,7 @@ db.collectionName.aggregate([
   { $group: { _id: "$corphubId", count: { $sum: 1 } } }
 ])
 
+db.collectionName.aggregate([
+  { $group: { _id: "$corphubid", uniqueAccounts: { $addToSet: "$accountnumber" } } },  // Group by corphubid and collect unique accountnumbers
+  { $project: { corphubid: "$_id", accountCount: { $size: "$uniqueAccounts" } } }  // Get the size of the unique account set
+])
