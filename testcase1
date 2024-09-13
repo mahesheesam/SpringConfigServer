@@ -1,0 +1,120 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+class BridgeClientImplTest {
+
+    @Mock
+    private PooledRestTemplateFactory restTemplateFactory;
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @Mock
+    private BridgeClientConfig config;
+
+    @Mock
+    private AvroBinaryHttpMessageConverter avroBinaryHttpMessageConverter;
+
+    @InjectMocks
+    private BridgeClientImpl bridgeClientImpl;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.initMocks(this);
+        when(restTemplateFactory.createRestTemplate(config)).thenReturn(restTemplate);
+    }
+
+    @Test
+    void testGetClientById_withValidClientId() {
+        // Mock the response entity
+        ClientInformation clientInfoMock = new ClientInformation();
+        ResponseEntity<ClientInformation> responseEntityMock = mock(ResponseEntity.class);
+        when(responseEntityMock.getBody()).thenReturn(clientInfoMock);
+
+        // Set up configuration and API mock
+        String clientId = "123";
+        String expectedUrl = "https://some-api-endpoint.com"; // Replace with your expected URL
+        String apiName = "get-client-info-by-id";
+        ApiDef apiDefMock = mock(ApiDef.class);
+        when(config.getMtlSFlag()).thenReturn(false); // Mock flag for http/https
+        when(config.getApiDef(apiName)).thenReturn(Optional.of(apiDefMock));
+        when(apiDefMock.getHost()).thenReturn("some-api-endpoint.com");
+        when(apiDefMock.getPort()).thenReturn(80);
+        when(apiDefMock.getPath()).thenReturn("/client/{clientId}");
+
+        // Mock RestTemplate response
+        when(restTemplate.exchange(
+                eq(expectedUrl),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ClientInformation.class),
+                eq(Collections.singletonMap("clientId", clientId))
+        )).thenReturn(responseEntityMock);
+
+        // Act
+        ClientInformation result = bridgeClientImpl.getClientById(clientId);
+
+        // Assert
+        assertNotNull(result);
+        verify(restTemplate, times(1)).exchange(
+                eq(expectedUrl),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ClientInformation.class),
+                eq(Collections.singletonMap("clientId", clientId))
+        );
+    }
+
+    @Test
+    void testGetClientById_throwsException_whenApiDefNotFound() {
+        // Arrange
+        String clientId = "123";
+        String apiName = "get-client-info-by-id";
+
+        // Mock the API definition to return an empty optional (meaning not found)
+        when(config.getApiDef(apiName)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            bridgeClientImpl.getClientById(clientId);
+        });
+    }
+
+    @Test
+    void testGetClientById_throwsDownStreamException_onRestTemplateError() {
+        // Arrange
+        String clientId = "123";
+        String expectedUrl = "https://some-api-endpoint.com"; // Replace with your expected URL
+        String apiName = "get-client-info-by-id";
+        ApiDef apiDefMock = mock(ApiDef.class);
+        when(config.getMtlSFlag()).thenReturn(false); // Mock flag for http/https
+        when(config.getApiDef(apiName)).thenReturn(Optional.of(apiDefMock));
+        when(apiDefMock.getHost()).thenReturn("some-api-endpoint.com");
+        when(apiDefMock.getPort()).thenReturn(80);
+        when(apiDefMock.getPath()).thenReturn("/client/{clientId}");
+
+        // Mock RestTemplate to throw an exception
+        when(restTemplate.exchange(
+                eq(expectedUrl),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                eq(ClientInformation.class),
+                eq(Collections.singletonMap("clientId", clientId))
+        )).thenThrow(new DownStreamException("Downstream Error"));
+
+        // Act & Assert
+        assertThrows(DownStreamException.class, () -> {
+            bridgeClientImpl.getClientById(clientId);
+        });
+    }
+}
