@@ -33,3 +33,70 @@ private void processPaymentEntries(String accountNumber, String accountTypeCode,
         }
     }
 }
+
+
+@Test
+public void testMapAndUpdateClientAccounts_AccountDoesNotExist() {
+    // Setup: Mock the response for getClientById, getClientAccount, getClientPaymentEntries, etc.
+    when(bridgeClient.getClientById(anyString())).thenReturn(mockClientInformation());
+    when(getClientPaymentEntries(anyString())).thenReturn(mockPaymentEntries());
+    when(getClientAccount(anyString(), anyString(), anyInt())).thenReturn(null);  // Account does not exist
+
+    // Call the method
+    mapAndUpdateClientAccounts("account123", "accountTypeCode", "corpHubId123");
+
+    // Assertions: Verify that insertClientAccounts was called
+    verify(prefBuilderMongo, times(1)).createAccountMongoEntry(anyString(), anyInt(), anyString());
+    verify(insertClientAccounts, times(1)).insertClientAccounts(any());
+}
+
+
+
+@Test
+public void testMapAndUpdateClientAccounts_AccountAlreadyExists() {
+    // Setup: Mock the response for getClientById, getClientAccount, getClientPaymentEntries, etc.
+    when(bridgeClient.getClientById(anyString())).thenReturn(mockClientInformation());
+    when(getClientPaymentEntries(anyString())).thenReturn(mockPaymentEntries());
+    when(getClientAccount(anyString(), anyString(), anyInt())).thenReturn(mockClientAccount());  // Account exists
+
+    // Call the method
+    mapAndUpdateClientAccounts("account123", "accountTypeCode", "corpHubId123");
+
+    // Assertions: Verify that insertClientAccounts was NOT called
+    verify(prefBuilderMongo, never()).createAccountMongoEntry(anyString(), anyInt(), anyString());
+    verify(insertClientAccounts, never()).insertClientAccounts(any());
+}
+
+
+@Test
+public void testMapAndUpdateClientAccounts_NullChecks() {
+    // Setup: Mock responses to return nulls where necessary
+    when(bridgeClient.getClientById(anyString())).thenReturn(null);  // Null client information
+
+    // Call the method
+    assertThrows(RuntimeException.class, () -> {
+        mapAndUpdateClientAccounts("account123", "accountTypeCode", "corpHubId123");
+    });
+
+    // Assertions: Verify that no unnecessary operations were performed
+    verify(prefBuilderMongo, never()).createAccountMongoEntry(anyString(), anyInt(), anyString());
+    verify(insertClientAccounts, never()).insertClientAccounts(any());
+}
+
+
+@Test
+public void testProcessPaymentEntries_AutoAddDisabled() {
+    // Setup: Mock the response for isAutoAddEnabled
+    when(isAutoAddEnabled(anyString(), any())).thenReturn(false);
+
+    // Call the method
+    processPaymentEntries("account123", "accountTypeCode", "corpHubId123", mockPaymentEntries());
+
+    // Assertions: Verify that no account was inserted
+    verify(prefBuilderMongo, never()).createAccountMongoEntry(anyString(), anyInt(), anyString());
+    verify(insertClientAccounts, never()).insertClientAccounts(any());
+}
+
+
+
+
