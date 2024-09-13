@@ -97,6 +97,12 @@ public void testProcessPaymentEntries_AutoAddDisabled() {
     verify(insertClientAccounts, never()).insertClientAccounts(any());
 }
 
-
+    List<String> relatedEntitiesList = Optional.ofNullable(client)
+        .map(ClientInformation::getClient)
+        .map(Client::getClientRelationships)
+        .orElse(Collections.emptyList())  // Default to empty list if null
+        .stream()
+        .map(ClientRelationship::getRelatedClientId)
+        .collect(Collectors.toList());
 
 
