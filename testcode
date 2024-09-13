@@ -1,0 +1,35 @@
+public void mapAndUpdateClientAccounts(String accountNumber, String accountTypeCode, String corpHubId) {
+    log.info("Process Internal Account to update payment client accounts corpHubId {} account {}", corpHubId, accountNumber);
+
+    ClientInformation client = bridgeClient.getClientById(corpHubId);
+    List<String> relatedEntitiesList = client.getClient().getClientRelationships().stream()
+        .map(ClientRelationship::getRelatedClientId)
+        .collect(Collectors.toList());
+    
+    List<ClientPreferenceMongoEntry> paymentEntries = getClientPaymentEntries(corpHubId);
+
+    // Process for corpHubId and its related entities
+    processPaymentEntries(accountNumber, accountTypeCode, corpHubId, paymentEntries);
+
+    // Process for related entities
+    for (String relatedEntityId : relatedEntitiesList) {
+        List<ClientPreferenceMongoEntry> relatedEntityPaymentEntries = getClientPaymentEntries(relatedEntityId);
+        processPaymentEntries(accountNumber, accountTypeCode, corpHubId, relatedEntityPaymentEntries);
+    }
+}
+
+private void processPaymentEntries(String accountNumber, String accountTypeCode, String corpHubId, 
+        List<ClientPreferenceMongoEntry> paymentEntries) {
+    
+    for (ClientPreferenceMongoEntry paymentEntry : paymentEntries) {
+        if (isAutoAddEnabled(accountTypeCode, paymentEntry)) {
+            ClientAccountsMongoEntry clientAccountMongoEntry = getClientAccount(paymentEntry.getCorpHubId(), accountNumber, paymentEntry.getUniquePrefKey());
+            if (clientAccountMongoEntry == null) {
+                clientAccountMongoEntry = prefBuilderMongo.createAccountMongoEntry(paymentEntry.getCorpHubId(), paymentEntry.getUniquePrefKey(), accountNumber);
+                log.info("Inserting the accountNumber {} for corpHubId {} uniquePrefKey {}", accountNumber, paymentEntry.getCorpHubId(), paymentEntry.getUniquePrefKey());
+                insertClientAccounts(clientAccountMongoEntry);
+                log.info("AccountNumber {} inserted successfully", accountNumber);
+            }
+        }
+    }
+}
