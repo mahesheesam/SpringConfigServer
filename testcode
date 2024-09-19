@@ -1,108 +1,22 @@
-public void mapAndUpdateClientAccounts(String accountNumber, String accountTypeCode, String corpHubId) {
-    log.info("Process Internal Account to update payment client accounts corpHubId {} account {}", corpHubId, accountNumber);
+import java.util.List;
 
-    ClientInformation client = bridgeClient.getClientById(corpHubId);
-    List<String> relatedEntitiesList = client.getClient().getClientRelationships().stream()
-        .map(ClientRelationship::getRelatedClientId)
-        .collect(Collectors.toList());
-    
-    List<ClientPreferenceMongoEntry> paymentEntries = getClientPaymentEntries(corpHubId);
+public class ReportGenerator {
 
-    // Process for corpHubId and its related entities
-    processPaymentEntries(accountNumber, accountTypeCode, corpHubId, paymentEntries);
+    public void generateReports(boolean eod, boolean intraday, boolean credit, boolean debit, boolean nacha) {
+        List<Runnable> reportGenerators = List.of(
+            () -> { if (eod) generateEodReport(); },
+            () -> { if (intraday) generateIntradayReport(); },
+            () -> { if (credit) generateCreditReport(); },
+            () -> { if (debit) generateDebitReport(); },
+            () -> { if (nacha) generateNachaReport(); }
+        );
 
-    // Process for related entities
-    for (String relatedEntityId : relatedEntitiesList) {
-        List<ClientPreferenceMongoEntry> relatedEntityPaymentEntries = getClientPaymentEntries(relatedEntityId);
-        processPaymentEntries(accountNumber, accountTypeCode, corpHubId, relatedEntityPaymentEntries);
+        reportGenerators.forEach(Runnable::run);
     }
+
+    private void generateEodReport() { /* ... */ }
+    private void generateIntradayReport() { /* ... */ }
+    private void generateCreditReport() { /* ... */ }
+    private void generateDebitReport() { /* ... */ }
+    private void generateNachaReport() { /* ... */ }
 }
-
-private void processPaymentEntries(String accountNumber, String accountTypeCode, String corpHubId, 
-        List<ClientPreferenceMongoEntry> paymentEntries) {
-    
-    for (ClientPreferenceMongoEntry paymentEntry : paymentEntries) {
-        if (isAutoAddEnabled(accountTypeCode, paymentEntry)) {
-            ClientAccountsMongoEntry clientAccountMongoEntry = getClientAccount(paymentEntry.getCorpHubId(), accountNumber, paymentEntry.getUniquePrefKey());
-            if (clientAccountMongoEntry == null) {
-                clientAccountMongoEntry = prefBuilderMongo.createAccountMongoEntry(paymentEntry.getCorpHubId(), paymentEntry.getUniquePrefKey(), accountNumber);
-                log.info("Inserting the accountNumber {} for corpHubId {} uniquePrefKey {}", accountNumber, paymentEntry.getCorpHubId(), paymentEntry.getUniquePrefKey());
-                insertClientAccounts(clientAccountMongoEntry);
-                log.info("AccountNumber {} inserted successfully", accountNumber);
-            }
-        }
-    }
-}
-
-
-@Test
-public void testMapAndUpdateClientAccounts_AccountDoesNotExist() {
-    // Setup: Mock the response for getClientById, getClientAccount, getClientPaymentEntries, etc.
-    when(bridgeClient.getClientById(anyString())).thenReturn(mockClientInformation());
-    when(getClientPaymentEntries(anyString())).thenReturn(mockPaymentEntries());
-    when(getClientAccount(anyString(), anyString(), anyInt())).thenReturn(null);  // Account does not exist
-
-    // Call the method
-    mapAndUpdateClientAccounts("account123", "accountTypeCode", "corpHubId123");
-
-    // Assertions: Verify that insertClientAccounts was called
-    verify(prefBuilderMongo, times(1)).createAccountMongoEntry(anyString(), anyInt(), anyString());
-    verify(insertClientAccounts, times(1)).insertClientAccounts(any());
-}
-
-
-
-@Test
-public void testMapAndUpdateClientAccounts_AccountAlreadyExists() {
-    // Setup: Mock the response for getClientById, getClientAccount, getClientPaymentEntries, etc.
-    when(bridgeClient.getClientById(anyString())).thenReturn(mockClientInformation());
-    when(getClientPaymentEntries(anyString())).thenReturn(mockPaymentEntries());
-    when(getClientAccount(anyString(), anyString(), anyInt())).thenReturn(mockClientAccount());  // Account exists
-
-    // Call the method
-    mapAndUpdateClientAccounts("account123", "accountTypeCode", "corpHubId123");
-
-    // Assertions: Verify that insertClientAccounts was NOT called
-    verify(prefBuilderMongo, never()).createAccountMongoEntry(anyString(), anyInt(), anyString());
-    verify(insertClientAccounts, never()).insertClientAccounts(any());
-}
-
-
-@Test
-public void testMapAndUpdateClientAccounts_NullChecks() {
-    // Setup: Mock responses to return nulls where necessary
-    when(bridgeClient.getClientById(anyString())).thenReturn(null);  // Null client information
-
-    // Call the method
-    assertThrows(RuntimeException.class, () -> {
-        mapAndUpdateClientAccounts("account123", "accountTypeCode", "corpHubId123");
-    });
-
-    // Assertions: Verify that no unnecessary operations were performed
-    verify(prefBuilderMongo, never()).createAccountMongoEntry(anyString(), anyInt(), anyString());
-    verify(insertClientAccounts, never()).insertClientAccounts(any());
-}
-
-
-@Test
-public void testProcessPaymentEntries_AutoAddDisabled() {
-    // Setup: Mock the response for isAutoAddEnabled
-    when(isAutoAddEnabled(anyString(), any())).thenReturn(false);
-
-    // Call the method
-    processPaymentEntries("account123", "accountTypeCode", "corpHubId123", mockPaymentEntries());
-
-    // Assertions: Verify that no account was inserted
-    verify(prefBuilderMongo, never()).createAccountMongoEntry(anyString(), anyInt(), anyString());
-    verify(insertClientAccounts, never()).insertClientAccounts(any());
-}
-
-    List<String> relatedEntitiesList = Optional.ofNullable(client)
-        .map(ClientInformation::getClient)
-        .map(Client::getClientRelationships)
-        .orElse(Collections.emptyList())  // Default to empty list if null
-        .stream()
-        .map(ClientRelationship::getRelatedClientId)
-        .collect(Collectors.toList());
-
-
