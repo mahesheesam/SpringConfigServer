@@ -1,13 +1,13 @@
-db.collectionName.aggregate([
-  { $group: { _id: "$corphubId", count: { $sum: 1 } } }
-])
+Rejected Payment Files:
 
-db.collectionName.aggregate([
-  { $unwind: "$accounts" },  // Use if 'accounts' is an array in your document
-  { $group: { _id: "$corphubId", count: { $sum: 1 } } }
-])
+6 payment files (VD 23rd) were rejected with 4092 USD payments for 3 clients due to invalid client preference in AXWAY.
+All rejected files were reprocessed successfully after getting explicit confirmation from clients.
+Follow-up: Add an additional Canary Post-Release Checkout.
+Performance Degradation (Form3):
 
-db.collectionName.aggregate([
-  { $group: { _id: "$corphubid", uniqueAccounts: { $addToSet: "$accountnumber" } } },  // Group by corphubid and collect unique accountnumbers
-  { $project: { corphubid: "$_id", accountCount: { $size: "$uniqueAccounts" } } }  // Get the size of the unique account set
-])
+Service degradation in UK FPS Payments led to 4 outbound payments being held in "repair" status, totaling $37k USD.
+Duplicate constraint was removed after resolving Form3 issues, and all payments were replayed successfully.
+RTP Incoming Payment Rejection:
+
+An incoming RTP payment was rejected due to an MDM GraphQL API timeout caused by the closure of over 2000 virtual accounts via External API.
+Once the Form3 issue was resolved, all related requests were replayed, and rejected files were reprocessed successfully.
