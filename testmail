@@ -1,42 +1,28 @@
-db.paymentPrefVersions.aggregate([
-  {
-    // Match paymentPrefVersions based on lastUpdateDate
-    $match: {
-      lastUpdateDate: { $gt: ISODate("2024-01-01T00:00:00Z") } // Replace with your required date
-    }
-  },
-  {
-    // Lookup matching paymentPreferences based on uniquePrefKey
-    $lookup: {
-      from: "paymentPreferences", // paymentPreferences collection
-      localField: "uniquePrefKey", // uniquePrefKey in paymentPrefVersions
-      foreignField: "uniquePrefKey", // matching field in paymentPreferences
-      as: "paymentPreferences"
-    }
-  },
-  {
-    // Unwind the array to get individual records
-    $unwind: "$paymentPreferences"
-  },
-  {
-    // Lookup accounts based on uniquePrefKey
-    $lookup: {
-      from: "accounts", // accounts collection
-      localField: "uniquePrefKey", // uniquePrefKey from paymentPrefVersions
-      foreignField: "uniquePrefKey", // uniquePrefKey in accounts collection
-      as: "accounts"
-    }
-  },
-  {
-    // Project the required fields, including corphubId, connectivityType, and clientIdConn from paymentPreferences
-    $project: {
-      _id: 0, // Exclude _id
-      uniquePrefKey: 1, // Include uniquePrefKey
-      lastUpdateDate: 1, // Include lastUpdateDate
-      "paymentPreferences.corphubId": 1, // Include corphubId from paymentPreferences
-      "paymentPreferences.connectivityType": 1, // Include connectivityType from paymentPreferences
-      "paymentPreferences.clientIdConn": 1, // Include clientIdConn from paymentPreferences
-      accounts: 1 // Include matched accounts
-    }
-  }
-])
+import pandas as pd
+
+# Function to check if a string contains both lowercase and uppercase characters
+def has_mixed_case(value):
+    if isinstance(value, str):  # Check if it's a string
+        return any(c.islower() for c in value) and any(c.isupper() for c in value)
+    return False
+
+# Load the Excel file (change 'your_file.xlsx' to the actual file path)
+file_path = 'your_file.xlsx'
+sheet_name = 'Sheet1'  # Change if necessary
+df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+# Specify the column name to check for mixed case values (change 'YourColumn' to the actual column name)
+column_name = 'YourColumn'
+
+# Apply the function to check each value in the column
+df['HasMixedCase'] = df[column_name].apply(has_mixed_case)
+
+# Filter the rows where the column has a combination of upper and lower case
+mixed_case_rows = df[df['HasMixedCase']]
+
+# Output the rows with mixed case values
+if not mixed_case_rows.empty:
+    print("Rows with mixed case values:")
+    print(mixed_case_rows[[column_name]])
+else:
+    print("No mixed case values found in the column.")
